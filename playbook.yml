@@ -1,0 +1,13 @@
+---
+- hosts: webserver
+  roles:
+    - common
+    - haproxy
+- hosts: bootstrap_server
+  roles:
+    - common
+    - { role: base_install, bootstrap: true, webui: true }
+- hosts: regular_server
+  roles:
+    - common
+    - { role: base_install, bootstrap: false, webui: false }
