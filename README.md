@@ -18,32 +18,30 @@ This folder contains all the configuration to bring up a Consul+Vault cluster, l
 .
 ├── README.md
 ├── Vagrantfile
-├── playbook.yml
+├── consul_vault_haproxy.yml
+├── playbook.retry
 └── roles
-    ├── base_install
+    ├── consul_vault_common
+    │   └── tasks
+    │       └── main.yml
+    ├── consul_vault_haproxy
     │   ├── files
-    │   │   ├── consul.service
-    │   │   ├── consul_0.7.1_linux_amd64.zip
-    │   │   ├── consul_0.7.1_web_ui.zip
-    │   │   ├── vault.service
-    │   │   └── vault_0.6.2_linux_amd64.zip
+    │   │   └── haproxy.cfg
     │   ├── handlers
     │   │   └── main.yml
     │   ├── tasks
     │   │   └── main.yml
     │   └── templates
-    │       ├── bootstrap_config.j2
-    │       ├── server_config.j2
-    │       └── vault_config.j2
-    ├── common
-    │   └── tasks
-    │       └── main.yml
-    └── haproxy
+    └── consul_vault_install
         ├── files
-        │   └── haproxy.cfg
+        │   ├── consul.service
+        │   └── vault.service
         ├── handlers
         │   └── main.yml
         ├── tasks
         │   └── main.yml
         └── templates
+            ├── bootstrap_config.j2
+            ├── server_config.j2
+            └── vault_config.j2
 ```
