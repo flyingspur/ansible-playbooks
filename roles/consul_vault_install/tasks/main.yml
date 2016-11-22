@@ -1,0 +1,69 @@
+--- 
+- name: Creates config/data directories
+  become: true
+  file:
+    path={{ item }}
+    state=directory
+    recurse=yes
+    mode=777
+  with_items: 
+    - /etc/consul.d/bootstrap
+    - /etc/consul.d/server
+    - /etc/consul.d/client
+    - /var/consul
+    - /etc/vault.d/agent/
+    - /opt/dist/consul_webui
+    - /tmp/consul_vault
+
+- name: Download consult, vault, consul_webui
+  get_url: url={{ item.url }} dest=/tmp/consul_vault checksum={{ item.checksum }}
+  with_items:
+    - { url: 'https://releases.hashicorp.com/consul/0.7.1/consul_0.7.1_linux_amd64.zip', checksum: 'sha256:5dbfc555352bded8a39c7a8bf28b5d7cf47dec493bc0496e21603c84dfe41b4b' } 
+    - { url: 'https://releases.hashicorp.com/vault/0.6.2/vault_0.6.2_linux_amd64.zip', checksum: 'sha256:91432c812b1264306f8d1ecf7dd237c3d7a8b2b6aebf4f887e487c4e7f69338c' } 
+    - { url: 'https://releases.hashicorp.com/consul/0.7.1/consul_0.7.1_web_ui.zip', checksum: 'sha256:1b793c60e1af24cc470421d0411e13748f451b51d8a6ed5fcabc8d00bfb84264' } 
+
+- name: Unarchive consul, vault, consul_webui
+  become: true
+  unarchive: src="/tmp/consul_vault/{{ item.pkg }}" dest={{ item.dest }} copy=false
+  with_items: 
+    - { flag: true, pkg: "consul_0.7.1_linux_amd64.zip", dest: /usr/local/bin }
+    - { flag: true, pkg: "vault_0.6.2_linux_amd64.zip", dest: /usr/local/bin }
+    - { flag: "{{ webui }}", pkg: "consul_0.7.1_web_ui.zip", dest: /opt/dist/consul_webui }
+  when: item.flag == true
+
+- name: Remove downloaded files post installation
+  file: path=/tmp/consul_vault state=absent
+  become: true
+
+- name: copying services
+  copy: src={{ item.src }} dest={{ item.dest }}
+  with_items:
+    - { src: "{{ role_path }}/files/consul.service", dest: /etc/systemd/system }
+    - { src: "{{ role_path }}/files/vault.service", dest: /etc/systemd/system }
+  become: true
+
+- name: Templating configs 
+  template: src={{ item.src }} dest={{ item.dest }}
+  with_items:
+    - { flag: "{{ bootstrap }}", src: "{{ role_path }}/templates/bootstrap_config.j2", dest: /etc/consul.d/bootstrap/bootstrap.json }
+    - { flag: true, src: "{{ role_path }}/templates/server_config.j2", dest: /etc/consul.d/server/config.json }
+    - { flag: true, src: "{{ role_path }}/templates/vault_config.j2", dest: /etc/vault.d/agent/config.hcl }
+  when: item.flag == true
+  become: true
+  notify:
+    - enable/restart consul
+    - enable/restart vault
+
+- name: remove existing VAULT_ADDR env variable from /etc/profile
+  lineinfile: state=absent dest=/etc/profile regexp="^export VAULT_ADDR"
+  become: true
+
+- name: add VAULT_ADDR env variable to /etc/profile
+  lineinfile:
+    state=present
+    dest=/etc/profile
+    regexp="^export VAULT_ADDR"
+    line="export VAULT_ADDR='http://{{ ansible_eth1['ipv4']['address'] }}:8200'"
+  become: true
+  notify:
+    - enable/restart vault
