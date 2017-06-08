@@ -1,7 +1,21 @@
 ---
-- name: enable/restart haproxy
+- name: enable-restart haproxy
   service:
     name=haproxy
+    state=restarted
+    enabled=yes
+  become: true
+
+- name: enable-restart firewalld
+  service:
+    name=firewalld
+    state=restarted
+    enabled=yes
+  become: true
+
+- name: enable-restart rsyslog
+  service:
+    name=rsyslog
     state=restarted
     enabled=yes
   become: true

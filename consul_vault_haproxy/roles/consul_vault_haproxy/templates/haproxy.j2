@@ -1,0 +1,55 @@
+userlist UsersFor_haproxy
+    user admin insecure-password admin12E*
+
+global
+    log         127.0.0.1 local2
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     4000
+    user        haproxy
+    group       haproxy
+    daemon
+    stats socket /var/lib/haproxy/stats
+
+defaults
+    mode                    http
+    log                     global
+    option                  httplog
+    option                  dontlognull
+    option  		    log-health-checks
+    option                  http-server-close
+    option forwardfor       except 127.0.0.0/8
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          1m
+    timeout server          1m
+    timeout http-keep-alive 10s
+    timeout check           10s
+    maxconn                 200
+
+listen consul
+    bind 0.0.0.0:9080
+    acl AuthOkay_haproxy http_auth(UsersFor_haproxy)
+    http-request auth realm haproxy if !AuthOkay_haproxy
+    balance roundrobin
+    option httpchk GET /v1/health/state/critical
+    server consul1:{{ hostvars["a-bootapp"][ nic ]["ipv4"]["address"] }}:8500 {{ hostvars["a-bootapp"][ nic ]["ipv4"]["address"] }}:8500 check
+    server consul2:{{ hostvars["b-app"][ nic ]["ipv4"]["address"] }}:8500 {{ hostvars["b-app"][ nic ]["ipv4"]["address"] }}:8500 check
+    server consul3:{{ hostvars["c-app"][ nic ]["ipv4"]["address"] }}:8500 {{ hostvars["c-app"][ nic ]["ipv4"]["address"] }}:8500 check
+
+listen vault
+    bind 0.0.0.0:80
+    balance roundrobin
+    option httpchk GET /v1/sys/health
+    server vault1:{{ hostvars["a-bootapp"][ nic ]["ipv4"]["address"] }}:8200 {{ hostvars["a-bootapp"][ nic ]["ipv4"]["address"] }}:8200 check
+    server vault2:{{ hostvars["b-app"][ nic ]["ipv4"]["address"] }}:8200 {{ hostvars["b-app"][ nic ]["ipv4"]["address"] }}:8200 check
+    server vault3:{{ hostvars["c-app"][ nic ]["ipv4"]["address"] }}:8200 {{ hostvars["c-app"][ nic ]["ipv4"]["address"] }}:8200 check
+
+listen stats *:1936
+    stats enable
+    stats uri /stats
+    stats hide-version
+    stats auth admin:Admin123*

@@ -1,13 +1,13 @@
 ---
+- hosts: bootstrap_app_server
+  roles:
+    - consul_vault_common
+    - { role: consul_vault_install, bootstrap: true, webui: true }
+- hosts: app_server
+  roles:
+    - consul_vault_common
+    - { role: consul_vault_install, bootstrap: false, webui: false }
 - hosts: webserver
   roles:
     - consul_vault_common
     - consul_vault_haproxy
-- hosts: bootstrap_server
-  roles:
-    - consul_vault_common
-    - { role: consul_vault_install, bootstrap: true, webui: true }
-- hosts: regular_server
-  roles:
-    - consul_vault_common
-    - { role: consul_vault_install, bootstrap: false, webui: false }

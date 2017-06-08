@@ -12,5 +12,5 @@
     "log_level": "INFO",
     "enable_syslog": true,
     "bootstrap_expect": 3,
-    "retry_join": ["192.168.33.10"]
+    "retry_join": ["{{ hostvars["a-bootapp"][ nic ]["ipv4"]["address"] }}"]
 }

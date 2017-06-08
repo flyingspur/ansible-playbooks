@@ -1,4 +1,19 @@
 --- 
+- name: Include variables
+  include_vars: vars.yml
+- name: enable ports 80, 9080, 1936 
+  firewalld: port={{ item }}/tcp permanent=true state=enabled
+  with_items:
+    - 80
+    - 9080
+    - 1936
+  become: true
+  notify:
+    - enable-restart firewalld
+
+- name: executing firewall changes
+  meta: flush_handlers
+
 - name: install haproxy package
   package: name={{ item }} state=present
   with_items:
@@ -9,13 +24,50 @@
   command: setsebool -P haproxy_connect_any 1
   become: true
 
-- name: copy haproxy.cfg for vault
+- name: copy haproxy.conf for logrotate
   copy:
-    src="{{ role_path }}/files/haproxy.cfg"
+    src="{{ role_path }}/files/haproxy.conf"
+    dest=/etc/rsyslog.d
+    mode=644
+  become: true
+
+- name: copy haproxy.cfg for vault
+  template:
+    src="{{ role_path }}/templates/haproxy.j2"
     dest=/etc/haproxy/haproxy.cfg
     mode=644
-    backup=yes
   become: true
   notify:
-    - enable/restart haproxy
+    - enable-restart haproxy
 
+- name: removing existing /etc/rsylog.conf settings ModLoad, UDPServerRun, UDPServerAddress
+  lineinfile: state=absent dest=/etc/rsyslog.conf regexp="^{{ item }}"
+  with_items:
+    - '\$ModLoad imudp.*'
+    - '\$UDPServerRun.*'
+    - '\$UDPServerAddress.*'
+  become: true
+  notify:
+    - enable-restart rsyslog
+
+- name: add haproxy logging setting in /etc/rsylog.conf for ModLoad, UDPServerRun, UDPServerAddress
+  blockinfile: 
+    dest: /etc/rsyslog.conf
+    insertafter: "^# Provides UDP syslog reception"
+    marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
+    block:  |
+      $ModLoad imudp
+      $UDPServerRun 514
+      $UDPServerAddress 127.0.0.1
+  become: true
+  notify:
+    - enable-restart rsyslog
+
+- name: copy haproxy for logging
+  copy:
+    src="{{ role_path }}/files/haproxy"
+    dest=/etc/logrotate.d
+    mode=644
+  become: true
+  notify:
+    - enable-restart rsyslog

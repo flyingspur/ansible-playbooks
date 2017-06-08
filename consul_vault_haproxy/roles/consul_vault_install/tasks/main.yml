@@ -1,4 +1,6 @@
 --- 
+- name: Include variables
+  include_vars: vars.yml
 - name: Creates config/data directories
   become: true
   file:
@@ -16,11 +18,11 @@
     - /tmp/consul_vault
 
 - name: Download consult, vault, consul_webui
-  get_url: url={{ item.url }} dest=/tmp/consul_vault checksum={{ item.checksum }}
+  get_url: url={{ item.url }}{{ item.fname }} dest=/tmp/consul_vault/{{ item.fname }} checksum={{ item.checksum }}
   with_items:
-    - { url: 'https://releases.hashicorp.com/consul/0.7.1/consul_0.7.1_linux_amd64.zip', checksum: 'sha256:5dbfc555352bded8a39c7a8bf28b5d7cf47dec493bc0496e21603c84dfe41b4b' } 
-    - { url: 'https://releases.hashicorp.com/vault/0.6.2/vault_0.6.2_linux_amd64.zip', checksum: 'sha256:91432c812b1264306f8d1ecf7dd237c3d7a8b2b6aebf4f887e487c4e7f69338c' } 
-    - { url: 'https://releases.hashicorp.com/consul/0.7.1/consul_0.7.1_web_ui.zip', checksum: 'sha256:1b793c60e1af24cc470421d0411e13748f451b51d8a6ed5fcabc8d00bfb84264' } 
+    - { url: 'https://releases.hashicorp.com/consul/0.7.1/', fname: 'consul_0.7.1_linux_amd64.zip', checksum: 'sha256:5dbfc555352bded8a39c7a8bf28b5d7cf47dec493bc0496e21603c84dfe41b4b' } 
+    - { url: 'https://releases.hashicorp.com/vault/0.6.2/', fname: 'vault_0.6.2_linux_amd64.zip', checksum: 'sha256:91432c812b1264306f8d1ecf7dd237c3d7a8b2b6aebf4f887e487c4e7f69338c' } 
+    - { url: 'https://releases.hashicorp.com/consul/0.7.1/', fname: 'consul_0.7.1_web_ui.zip', checksum: 'sha256:1b793c60e1af24cc470421d0411e13748f451b51d8a6ed5fcabc8d00bfb84264' } 
 
 - name: Unarchive consul, vault, consul_webui
   become: true
@@ -30,10 +32,6 @@
     - { flag: true, pkg: "vault_0.6.2_linux_amd64.zip", dest: /usr/local/bin }
     - { flag: "{{ webui }}", pkg: "consul_0.7.1_web_ui.zip", dest: /opt/dist/consul_webui }
   when: item.flag == true
-
-- name: Remove downloaded files post installation
-  file: path=/tmp/consul_vault state=absent
-  become: true
 
 - name: copying services
   copy: src={{ item.src }} dest={{ item.dest }}
