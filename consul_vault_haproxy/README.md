@@ -3,7 +3,6 @@ This folder contains all the configuration to bring up a Consul+Vault cluster, l
 
 ## Usage
 1. Run ```vagrant up```, to start provisioning the cluster of 3 Consult+Vault nodes and a Web server node running HAProxy to load balance the 3 Vault nodes 
-<<<<<<< HEAD
 2. Upon completion, access the Consul Web UI can be accessed via ```http://192.168.33.39:9080/```, using creds admin/admin12E* and, Vault's HTTP end point can be accessed via ```http://192.168.33.39/v1/sys/init```
 3. HAProxy's admin UI can be accessed via ```http://192.168.33.39:1936/stats```. The credentials are admin/Admin123*.
 
