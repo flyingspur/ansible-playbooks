@@ -1,2 +1,27 @@
 ---
-# tasks file for grafana_graphite_ubuntu
+- name: Upgrade all packages to the latest version
+  become: true
+  apt:
+    name: "*"
+    state: latest
+    force_apt_get: yes
+- name: Update all packages to the latest version
+  become: true
+  apt:
+    upgrade: dist
+    force_apt_get: yes
+- name: install backend packages
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - build-essential
+    - graphite-web
+    - graphite-carbon
+    - postgresql
+    - apache2
+    - libpq-dev
+    - libapache2-mod-wsgi
+    - python-psycopg2
+    - python-dev

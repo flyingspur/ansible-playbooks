@@ -1,2 +1,12 @@
 ---
-# tasks file for grafana_graphite_ubuntu
+- name: Upgrade all packages to the latest version
+  become: true
+  apt:
+    name: "*"
+    state: latest
+    force_apt_get: yes
+- name: Update all packages to the latest version
+  become: true
+  apt:
+    upgrade: dist
+    force_apt_get: yes
