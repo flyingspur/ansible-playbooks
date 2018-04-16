@@ -38,4 +38,18 @@
     replace: 'CARBON_CACHE_ENABLED=true'
     backup: yes
   notify: Restart Carbon cache service
+- name: Create Postgresql user and database
+  become_user: postgres
+  postgresql_user:
+    name: graphite
+    password: graphite
+- name: Create graphite and grafana db
+  become_user: postgres
+  postgresql_db:
+    name: "{{ item }}"
+    owner: graphite
+  loop:
+    - graphite
+    - grafana
+
 
