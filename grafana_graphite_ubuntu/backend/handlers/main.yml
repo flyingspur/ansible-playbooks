@@ -1,2 +1,6 @@
 ---
 # handlers file for grafana_graphite_ubuntu
+- name: Restart Carbon cache service
+  service:
+    name: carbon-cache
+    state: restarted

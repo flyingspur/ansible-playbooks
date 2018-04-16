@@ -1,7 +1,11 @@
 ---
 - hosts: frontend
+  gather_facts: false
+  become: true
   roles:
     - frontend
 - hosts: backend
+  gather_facts: false
+  become: true
   roles:
     - backend

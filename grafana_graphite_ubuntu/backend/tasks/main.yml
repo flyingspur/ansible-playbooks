@@ -1,17 +1,14 @@
 ---
 - name: Upgrade all packages to the latest version
-  become: true
   apt:
     name: "*"
     state: latest
     force_apt_get: yes
 - name: Update all packages to the latest version
-  become: true
   apt:
     upgrade: dist
     force_apt_get: yes
 - name: install backend packages
-  become: true
   package:
     name: "{{ item }}"
     state: present
@@ -25,3 +22,20 @@
     - libapache2-mod-wsgi
     - python-psycopg2
     - python-dev
+- name: Set up sample test metrics
+  template:
+    src: storage-schemas.conf
+    dest: /etc/carbon/storage-schemas.conf
+- name: Make a copy of default configuration file
+  copy:
+    src: /usr/share/doc/graphite-carbon/examples/storage-aggregation.conf.example
+    dest: /usr/share/doc/graphite-carbon/examples/storage-aggregation.conf
+    remote_src: yes
+- name: Enable carbon to run on boot
+  replace:
+    path: /etc/default/graphite-carbon
+    regexp: 'CARBON_CACHE_ENABLED=false'
+    replace: 'CARBON_CACHE_ENABLED=true'
+    backup: yes
+  notify: Restart Carbon cache service
+
