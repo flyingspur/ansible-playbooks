@@ -1,0 +1,5 @@
+---
+# install.yml: This is the global k8s install playbook
+- import_playbook: lb.yml
+- import_playbook: master.yml
+- import_playbook: node.yml
