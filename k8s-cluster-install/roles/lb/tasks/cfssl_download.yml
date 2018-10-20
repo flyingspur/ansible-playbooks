@@ -1,0 +1,22 @@
+---
+- name: Check if cfssl exists
+  stat: path='/usr/local/bin/cfssl'
+  register: cfssl
+
+- name: Download cfssl
+  get_url:
+    url: 'https://pkg.cfssl.org/R1.2/cfssl_linux-amd64'
+    dest: '/usr/local/bin/cfssl'
+    mode: 0700
+  when: cfssl.stat.exists == false
+
+- name: Check if cfssljson exists
+  stat: path='/usr/local/bin/cfssljson'
+  register: cfssljson
+
+- name: Download cfssljson
+  get_url:
+    url: 'https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64'
+    dest: '/usr/local/bin/cfssljson'
+    mode: 0700
+  when: cfssljson.stat.exists == false
