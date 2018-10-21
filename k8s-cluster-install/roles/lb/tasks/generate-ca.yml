@@ -3,15 +3,34 @@
   file: 
     path: "{{ item }}"
     mode: 0644
+    state: absent
+  loop:
+  - '/opt/certificates'
+  - '/opt/certificates/input'
+  - '/opt/certificates/output'
+- name: Create /opt/certificates directory
+  file: 
+    path: "{{ item }}"
+    mode: 0644
     state: directory
   loop:
   - '/opt/certificates'
-  - '/opt/certificates/inputfiles'
+  - '/opt/certificates/input'
+  - '/opt/certificates/output'
 - name: Copy input files for generating certificates
   copy:
     src: "{{ role_path }}/files/"
-    dest: '/opt/certificates/inputfiles/'
+    dest: '/opt/certificates/input/'
 - name: Generate CA
-  shell: /usr/local/bin/cfssl gencert -initca "/opt/certificates/inputfiles/ca-csr.json" | /usr/local/bin/cfssljson -bare ca
+  shell: /usr/local/bin/cfssl gencert -initca /opt/certificates/input/ca-csr.json | /usr/local/bin/cfssljson -bare ca
   args:
-    chdir: /opt/certificates
+    chdir: /opt/certificates/output
+- name: Generate admin certs
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -profile=kubernetes ../input/admin-csr.json | cfssljson -bare admin
+  args:
+    chdir: /opt/certificates/output
+- name: Generate worker certs
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -hostname="worker-{{item}}.192.168.199.2{item}" -profile=kubernetes "../input/worker-{{item}}-csr.json" | cfssljson -bare "worker-{{item}}"
+  args:
+    chdir: /opt/certificates/output
+  with_sequence: start=0 end=2
