@@ -1,0 +1,3 @@
+---
+- import_tasks: cfssl_download.yml
+- import_tasks: generate-ca.yml
