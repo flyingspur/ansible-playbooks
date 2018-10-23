@@ -1,0 +1,66 @@
+---
+- name: Create /opt/certificates directory
+  file: 
+    path: "{{ item }}"
+    mode: 0644
+    state: absent
+  loop:
+  - "/opt/certificates"
+  - "/opt/certificates/input"
+  - "/opt/certificates/output"
+  - "/opt/kubeconfigs/output"
+- name: Create /opt/certificates directory
+  file: 
+    path: "{{ item }}"
+    mode: 0644
+    state: directory
+  loop:
+  - "/opt/certificates"
+  - "/opt/certificates/input"
+  - "/opt/certificates/output"
+  - "/opt/kubeconfigs/output"
+- name: Copy input files for generating certificates
+  copy:
+    src: "{{ role_path }}/files/"
+    dest: "/opt/certificates/input/"
+- name: Generate worker json files for certificate generation
+  template:
+    src: "{{ role_path }}/templates/worker.j2"
+    dest: "/opt/certificates/input/worker-{{ item }}-csr.json"
+  vars:
+    cntr: "{{ item }}"
+  with_sequence: start=1 end="{{ default_worker_cnt }}"
+- name: Generate Certificate Authority
+  shell: /usr/local/bin/cfssl gencert -initca /opt/certificates/input/ca-csr.json | /usr/local/bin/cfssljson -bare ca
+  args:
+    chdir: /opt/certificates/output
+- name: Generate The Admin Client Certificate
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -profile=kubernetes ../input/admin-csr.json | cfssljson -bare admin
+  args:
+    chdir: /opt/certificates/output
+- name: Generate The Kubelet Client Certificates
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -hostname="worker-{{ item }}.192.168.199.2{{ item }}" -profile=kubernetes "../input/worker-{{ item }}-csr.json" | cfssljson -bare "worker-{{ item }}"
+  args:
+    chdir: /opt/certificates/output
+  with_sequence: start=1 end="{{ default_worker_cnt }}"
+- name: Generate The Controller Manager Client Certificate
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -profile=kubernetes "../input/kube-controller-manager-csr.json" | cfssljson -bare kube-controller-manager
+  args:
+    chdir: /opt/certificates/output
+- name: Generate The Kube Proxy Client Certificate
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -profile=kubernetes "../input/kube-proxy-csr.json" | cfssljson -bare kube-proxy
+  args:
+    chdir: /opt/certificates/output
+- name: Generate The Scheduler Client Certificate
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -profile=kubernetes "../input/kube-scheduler-csr.json" | cfssljson -bare kube-scheduler
+  args:
+    chdir: /opt/certificates/output
+- name: Generate The Kubernetes API Server Certificate
+# needs modification to remove static values from hostname
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -hostname=10.32.0.1,192.168.199.40,192.168.199.10,192.168.199.11,192.168.199.12,127.0.0.1,kubernetes.default -profile=kubernetes "../input/kube-proxy-csr.json" | cfssljson -bare kubernetes
+  args:
+    chdir: /opt/certificates/output
+- name: Generate The Service Account Key Pair
+  shell: /usr/local/bin/cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=../input/ca-config.json -profile=kubernetes "../input/service-account-csr.json" | cfssljson -bare service-account
+  args:
+    chdir: /opt/certificates/output
